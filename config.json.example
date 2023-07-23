@@ -1,0 +1,17 @@
+{
+    "interval": 60,
+    "omada": {
+        "host": "omada.lan",
+        "username": "",
+        "password": ""
+    },
+    "homeassistant": {
+        "host": "mqtt.lan",
+        "port": 1883,
+        "username": "",
+        "password": ""
+    },
+    "devices": {
+        "AA-AA-AA-FF-FF-FF": "Someone"
+    }
+}
