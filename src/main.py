@@ -49,8 +49,11 @@ def run():
                 continue
             present.append(client["mac"])
 
-            print("[updated]")
             ha.set_state(_mac_to_id(client["mac"]), "home")
+            print("[updated]")
+
+            # NOTE: hack to make it work properly.
+            time.sleep(0.01)
 
     missing = list(set(config.devices.keys()) - set(present))
     for mac in missing:
