@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import datetime
-import json
 import time
+import signal
+import sys
 
 from omada import Omada
 from homeassistant import HomeAssistant
@@ -61,7 +62,14 @@ def run():
 
     time.sleep(config.interval)
 
-while True:
-    print("-----", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "-----")
-    run()
-    print()
+def terminate(signal, frame):
+    print("Terminating...")
+    sys.exit()
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, terminate)
+
+    while True:
+        print("-----", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "-----")
+        run()
+        print()
