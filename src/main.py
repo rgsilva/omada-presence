@@ -51,8 +51,9 @@ def run():
             print("[updated]")
             ha.set_state(_mac_to_id(client["mac"]), "home")
 
-    missing = list(set(present) - set(config.devices.keys()))
+    missing = list(set(config.devices.keys()) - set(present))
     for mac in missing:
+        print("Missing", mac)
         ha.set_state(_mac_to_id(mac), "not_home")
 
     omada.logout()
