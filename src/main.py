@@ -13,7 +13,7 @@ from config import load_config
 def _mac_to_id(mac: str) -> str:
     return mac.lower().replace("-", "")
 
-def run():
+def run(last_present: list[str] = [], last_away: list[str] = []):
     config = load_config("config.json")
 
     omada = Omada(
@@ -42,28 +42,39 @@ def run():
         clients = omada.clients(site["id"])
         for client in clients:
             lsstr = datetime.datetime.fromtimestamp(client["lastSeen"]/1000).strftime("%Y-%m-%d %H:%M:%S")
-            print(client["mac"], client["name"], lsstr, end=" ")
+            mac_address = client["mac"]
+            print(mac_address, client["name"], lsstr, end=" ")
 
-            if client["mac"] not in config.devices:
+            if mac_address not in config.devices:
                 print("[unknown]")
                 continue
-            present.append(client["mac"])
-
-            ha.set_state(_mac_to_id(client["mac"]), "home")
-            print("[updated]")
+            present.append(mac_address)
+            print("[known]")
 
             # NOTE: hack to make it work properly.
             time.sleep(0.01)
 
+    for mac in present:
+        if mac in last_present:
+            print("Already reported at home", mac)
+            continue
+        print("Reporting at home", mac)
+        ha.set_state(_mac_to_id(mac), "home")
+
     missing = list(set(config.devices.keys()) - set(present))
     for mac in missing:
-        print("Missing", mac)
+        if mac in last_away:
+            print("Already reported away", mac)
+            continue
+        print("Reporting away", mac)
         ha.set_state(_mac_to_id(mac), "not_home")
 
     omada.logout()
     ha.disconnect()
 
     time.sleep(config.interval)
+
+    return present, missing
 
 def terminate(signal, frame):
     print("Terminating...")
@@ -72,7 +83,9 @@ def terminate(signal, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, terminate)
 
+    last_present = []
+    last_missing = []
     while True:
         print("-----", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "-----")
-        run()
+        last_present, last_missing = run(last_present, last_missing)
         print()
