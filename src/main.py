@@ -5,36 +5,25 @@ import time
 import signal
 import sys
 
-from omada import Omada
+from config import load_config, Config
 from homeassistant import HomeAssistant
+from omada import Omada
 from ping import is_alive
-
-from config import load_config
 
 def _mac_to_id(mac: str) -> str:
     return mac.lower().replace("-", "")
 
-def run():
-    config = load_config("config.json")
+def _terminate(signal, frame):
+    print("Terminating...")
+    sys.exit()
 
-    omada = Omada(
-        host=config.omada.host,
-        username=config.omada.username,
-        password=config.omada.password
-    )
-    ha = HomeAssistant(
-        host=config.homeassistant.host,
-        port=config.homeassistant.port,
-        username=config.homeassistant.username,
-        password=config.homeassistant.password
-    )
-
+def loop(config: Config, omada: Omada, ha: HomeAssistant):
     ha.connect()
     omada.login()
 
     for mac in config.devices:
-        print("[created]", mac, config.devices[mac])
-        ha.create(_mac_to_id(mac), config.devices[mac])
+        if ha.create(_mac_to_id(mac), config.devices[mac]):
+            print("[created]", mac, config.devices[mac])
 
     present = []
 
@@ -69,16 +58,25 @@ def run():
     omada.logout()
     ha.disconnect()
 
-    time.sleep(config.interval)
-
-def terminate(signal, frame):
-    print("Terminating...")
-    sys.exit()
-
 if __name__ == "__main__":
-    signal.signal(signal.SIGTERM, terminate)
+    signal.signal(signal.SIGTERM, _terminate)
+
+    config = load_config("config.json")
+
+    omada = Omada(
+        host=config.omada.host,
+        username=config.omada.username,
+        password=config.omada.password
+    )
+    ha = HomeAssistant(
+        host=config.homeassistant.host,
+        port=config.homeassistant.port,
+        username=config.homeassistant.username,
+        password=config.homeassistant.password
+    )
 
     while True:
-        print("-----", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "-----")
-        run()
         print()
+        print("-----", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "-----")
+        loop(config, omada, ha)
+        time.sleep(config.interval)

@@ -8,6 +8,7 @@ class HomeAssistant:
         self._username = username
         self._password = password
 
+        self._created = []
         self._client = mqtt.Client()
         self._client.username_pw_set(self._username, self._password)
 
@@ -18,6 +19,9 @@ class HomeAssistant:
         self._client.disconnect()
 
     def create(self, id: str, name: str):
+        if id in self._created:
+            return False
+
         config = {
             "state_topic": f"{id}/state",
             "name": name,
@@ -25,6 +29,9 @@ class HomeAssistant:
             "payload_not_home": "not_home"
         }
         self._client.publish(f"homeassistant/device_tracker/{id}/config", json.dumps(config))
+
+        self._created.append(id)
+        return True
 
     def set_state(self, id: str, state: str):
         self._client.publish(f"{id}/state", state)
