@@ -7,6 +7,7 @@ import sys
 
 from omada import Omada
 from homeassistant import HomeAssistant
+from ping import is_alive
 
 from config import load_config
 
@@ -32,7 +33,7 @@ def run():
     omada.login()
 
     for mac in config.devices:
-        print("Creating", mac, config.devices[mac])
+        print("[created]", mac, config.devices[mac])
         ha.create(_mac_to_id(mac), config.devices[mac])
 
     present = []
@@ -41,23 +42,28 @@ def run():
     for site in sites:
         clients = omada.clients(site["id"])
         for client in clients:
-            lsstr = datetime.datetime.fromtimestamp(client["lastSeen"]/1000).strftime("%Y-%m-%d %H:%M:%S")
-            print(client["mac"], client["name"], lsstr, end=" ")
-
             if client["mac"] not in config.devices:
-                print("[unknown]")
                 continue
-            present.append(client["mac"])
 
-            ha.set_state(_mac_to_id(client["mac"]), "home")
-            print("[updated]")
+            # TODO: use last seen.
+            # last_seen = datetime.datetime.fromtimestamp(client["lastSeen"]/1000)
+
+            ip = client["ip"] if "ip" in client else None
+            client_is_alive = True
+            if ip is not None:
+                client_is_alive = is_alive(ip)
+
+            if client_is_alive:
+                ha.set_state(_mac_to_id(client["mac"]), "home")
+                present.append(client["mac"])
+                print("[at home]", client["mac"], config.devices[client["mac"]])
 
             # NOTE: hack to make it work properly.
             time.sleep(0.01)
 
     missing = list(set(config.devices.keys()) - set(present))
     for mac in missing:
-        print("Missing", mac)
+        print("[away]", mac, config.devices[mac])
         ha.set_state(_mac_to_id(mac), "not_home")
 
     omada.logout()
