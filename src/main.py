@@ -47,9 +47,6 @@ def loop(config: Config, omada: Omada, ha: HomeAssistant):
                 present.append(client["mac"])
                 print("[at home]", client["mac"], config.devices[client["mac"]])
 
-            # NOTE: hack to make it work properly.
-            time.sleep(0.01)
-
     missing = list(set(config.devices.keys()) - set(present))
     for mac in missing:
         print("[away]", mac, config.devices[mac])

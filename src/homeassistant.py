@@ -1,4 +1,5 @@
 import json
+import time
 import paho.mqtt.client as mqtt
 
 class HomeAssistant:
@@ -35,3 +36,7 @@ class HomeAssistant:
 
     def set_state(self, id: str, state: str):
         self._client.publish(f"{id}/state", state)
+
+        # NOTE: hack to make it work properly. Without this, calls of this method
+        # in a loop will just not work. Not sure yet why.
+        time.sleep(0.02)
