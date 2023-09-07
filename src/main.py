@@ -22,8 +22,7 @@ def loop(config: Config, omada: Omada, ha: HomeAssistant):
     omada.login()
 
     for mac in config.devices:
-        if ha.create(_mac_to_id(mac), config.devices[mac]):
-            print("[created]", mac, config.devices[mac])
+        ha.create(_mac_to_id(mac), config.devices[mac])
 
     present = []
 
