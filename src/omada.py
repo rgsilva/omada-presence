@@ -17,6 +17,7 @@ class Omada:
         self._password = password
 
         self._session = requests.session()
+        self._session.verify = False
         self._endpoint: Optional[str] = None
         self._token: Optional[str] = None
 
