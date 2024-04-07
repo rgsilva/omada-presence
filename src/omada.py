@@ -1,7 +1,10 @@
 import requests
 import datetime
-
 from typing import Optional
+
+# Suppress InsecureRequestWarning
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def _fail(resp):
     raise Exception(f"unexpected: {resp.status_code}, {resp.text}")
