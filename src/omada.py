@@ -32,16 +32,31 @@ class Omada:
         return {"Csrf-Token": self._token}
 
     def login(self):
+        requires_users_request = False
+
         resp = self._session.get(f"https://{self._host}", allow_redirects=False)
-        if resp.status_code != 302:
+        if resp.status_code == 302:
+            self._endpoint = resp.headers["Location"].split("/login")[0]
+        elif resp.status_code == 200:
+            # Newer versions do not require the redirect, but require further
+            # steps to get the correct endpoint.
+            self._endpoint = f"https://{self._host}"
+            requires_users_request = True
+        else:
             _fail(resp)
-        self._endpoint = resp.headers["Location"].split("/login")[0]
 
         payload = {"username": self._username, "password": self._password}
         resp = self._session.post(f"{self._endpoint}/api/v2/login", json=payload)
         validate_response(resp)
 
         self._token = resp.json()["result"]["token"]
+
+        if requires_users_request:
+            resp = self._session.get(f"{self._endpoint}/api/v2/current/users", headers=self._headers())
+            validate_response(resp)
+
+            omada_cid = resp.json()["result"]["omadacId"]
+            self._endpoint = f"https://{self._host}/{omada_cid}"
 
     def logout(self):
         self._fail_if_not_ready()
@@ -64,7 +79,7 @@ class Omada:
         self._fail_if_not_ready()
 
         now = datetime.datetime.now().timestamp()
-        resp = self._session.get(f"{self._endpoint}/api/v2/sites/{site}/clients?currentPageSize=1000&currentPage=1&filters.active=true&_={now}", headers=self._headers())
+        resp = self._session.get(f"{self._endpoint}/api/v2/sites/{site}/clients?currentPageSize=100&currentPage=1&filters.active=true&_={now}", headers=self._headers())
         validate_response(resp)
 
         return resp.json()["result"]["data"]
